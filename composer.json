@@ -1,7 +1,7 @@
 {
-    "name": "spatie/geocoder",
+    "name": "axelb/geocoder",
     "description": "Geocoding addresses to coordinates",
-    "homepage": "https://github.com/spatie/geocoder",
+    "homepage": "https://github.com/AxelBCreative/geocoder",
     "keywords":
         [
             "geocode",
