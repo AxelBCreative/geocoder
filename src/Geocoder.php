@@ -2,6 +2,7 @@
 
 namespace Spatie\Geocoder;
 
+use Exception;
 use GuzzleHttp\Client;
 use Spatie\Geocoder\Exceptions\CouldNotGeocode;
 
@@ -23,9 +24,6 @@ class Geocoder
 
     /** @var string */
     protected $region;
-
-    /** @var string */
-    protected $bounds;
 
     public function __construct(Client $client)
     {
@@ -53,13 +51,6 @@ class Geocoder
         return $this;
     }
 
-    public function setBounds(string $bounds)
-    {
-        $this->bounds = $bounds;
-
-        return $this;
-    }
-
     public function getCoordinatesForAddress(string $address): array
     {
         if (empty($address)) {
@@ -76,11 +67,11 @@ class Geocoder
 
         $geocodingResponse = json_decode($response->getBody());
 
-        if (! empty($geocodingResponse->error_message)) {
+        if (!empty($geocodingResponse->error_message)) {
             throw CouldNotGeocode::serviceReturnedError($geocodingResponse->error_message);
         }
 
-        if (! count($geocodingResponse->results)) {
+        if (!count($geocodingResponse->results)) {
             return $this->emptyResponse();
         }
 
@@ -101,11 +92,11 @@ class Geocoder
 
         $reverseGeocodingResponse = json_decode($response->getBody());
 
-        if (! empty($reverseGeocodingResponse->error_message)) {
+        if (!empty($reverseGeocodingResponse->error_message)) {
             throw CouldNotGeocode::serviceReturnedError($reverseGeocodingResponse->error_message);
         }
 
-        if (! count($reverseGeocodingResponse->results)) {
+        if (!count($reverseGeocodingResponse->results)) {
             return $this->emptyResponse();
         }
 
@@ -114,13 +105,39 @@ class Geocoder
 
     protected function formatResponse($response): array
     {
-        return [
+        $data = [
             'lat' => $response->results[0]->geometry->location->lat,
             'lng' => $response->results[0]->geometry->location->lng,
             'accuracy' => $response->results[0]->geometry->location_type,
             'formatted_address' => $response->results[0]->formatted_address,
-            'viewport' => $response->results[0]->geometry->viewport,
+            'city' => '',
+            'region' => '',
+            'country' => '',
+            'iso' => ''
         ];
+
+        foreach ($response->results[0]->address_components as $row) {
+            if (in_array('sublocality', $row->types)) {
+                $data['city'] = $row->long_name;
+            }
+            if (in_array('administrative_area_level_2', $row->types)) {
+                $data['city'] = $row->long_name;
+            }
+            if (in_array('locality', $row->types)) {
+                $data['city'] = $row->long_name;
+            }
+            if (in_array('postal_town', $row->types)) {
+                $data['city'] = $row->long_name;
+            }
+            if (in_array('administrative_area_level_1', $row->types)) {
+                $data['region'] = $row->long_name;
+            }
+            if (in_array('country', $row->types)) {
+                $data['country'] = $row->long_name;
+                $data['iso'] = $row->short_name;
+            }
+        }
+        return $data;
     }
 
     protected function getRequestPayload(array $parameters): array
@@ -129,7 +146,6 @@ class Geocoder
             'key' => $this->apiKey,
             'language' => $this->language,
             'region' => $this->region,
-            'bounds' => $this->bounds,
         ], $parameters);
 
         return ['query' => $parameters];
@@ -142,7 +158,6 @@ class Geocoder
             'lng' => 0,
             'accuracy' => static::RESULT_NOT_FOUND,
             'formatted_address' => static::RESULT_NOT_FOUND,
-            'viewport' => static::RESULT_NOT_FOUND,
         ];
     }
 }
