@@ -22,8 +22,7 @@ class GeocoderServiceProvider extends ServiceProvider
             return (new Geocoder(new Client))
                 ->setApiKey(config('geocoder.key'))
                 ->setLanguage(config('geocoder.language'))
-                ->setRegion(config('geocoder.region'))
-                ->setBounds(config('geocoder.bounds'));
+                ->setRegion(config('geocoder.region'));
         });
     }
 }
